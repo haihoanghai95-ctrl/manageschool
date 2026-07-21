@@ -1,0 +1,289 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+/* Custom styles for animations and scrollbars */
+@layer base {
+  body {
+    @apply font-sans antialiased text-slate-800 bg-slate-50 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100;
+  }
+}
+
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.dark .glassmorphism {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Print Styles */
+@media print {
+  /* Hide all elements that should not be printed */
+  .no-print,
+  .no-print *,
+  header,
+  aside,
+  button,
+  input,
+  textarea,
+  iframe,
+  [role="tablist"],
+  .toast,
+  #sidebar-logout-btn,
+  #sidebar-change-password-btn {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Reset layout constraints and allow content to span multiple pages naturally */
+  html, body, #root,
+  body > div,
+  .h-screen,
+  .min-h-screen,
+  .overflow-y-auto,
+  .overflow-x-auto,
+  main,
+  .flex-1 {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    transition: none !important;
+  }
+
+  /* Ensure page backgrounds are pure white and text is readable slate/black */
+  * {
+    color: #0f172a !important; /* deep slate */
+    background-color: transparent !important;
+    border-color: #cbd5e1 !important; /* high contrast slate-300 borders */
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Keep custom indicator colors and SVGs intact on print */
+  svg *, svg line, svg rect, svg circle, svg polyline, svg text, svg path {
+    background-color: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Restore text colors for badges, indicators and chart labels */
+  .text-emerald-600, .text-emerald-500, .text-emerald-400 { color: #10b981 !important; }
+  .text-rose-600, .text-rose-500, .text-rose-400 { color: #f43f5e !important; }
+  .text-amber-600, .text-amber-500, .text-amber-400 { color: #f59e0b !important; }
+  .text-blue-600, .text-blue-500, .text-blue-400 { color: #3b82f6 !important; }
+  .text-indigo-600, .text-indigo-500, .text-indigo-400 { color: #4f46e5 !important; }
+  .text-slate-400, .text-slate-500 { color: #64748b !important; }
+
+  /* Restore backgrounds for critical visual elements on report printout */
+  .bg-emerald-50, .bg-emerald-500/10, .bg-emerald-500/5 { background-color: #f0fdf4 !important; }
+  .bg-rose-50, .bg-rose-500/10, .bg-rose-500/5 { background-color: #fff1f2 !important; }
+  .bg-amber-50, .bg-amber-500/10, .bg-amber-500/5 { background-color: #fffbeb !important; }
+  .bg-blue-50, .bg-blue-500/10, .bg-blue-500/5 { background-color: #f0f9ff !important; }
+
+  /* Style select dropdowns to print as clean, borderless bold plain text */
+  select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    border: none !important;
+    background: transparent !important;
+    background-image: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-weight: bold !important;
+    font-size: inherit !important;
+    color: #0f172a !important;
+  }
+
+  /* Clean styling for card blocks on reports */
+  .bg-white, .dark\:bg-slate-900 {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Table specific adjustments for clean alignment & clear borders */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-top: 12px !important;
+  }
+  
+  th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    font-weight: bold !important;
+    border: 1px solid #94a3b8 !important;
+    padding: 8px 10px !important;
+  }
+
+  td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 10px !important;
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  /* Remove page margin constraints so prints use the standard margins */
+  @page {
+    margin: 1.5cm;
+    size: auto;
+  }
+}
+
+/* Chibi Cute Vector Animations */
+@keyframes chibi-bob {
+  0%, 100% {
+    transform: translateY(0px) scaleY(1);
+  }
+  50% {
+    transform: translateY(-2px) scaleY(1.02);
+  }
+}
+
+@keyframes chibi-jump {
+  0%, 100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  30% {
+    transform: translateY(0) scale(1.06, 0.92); /* Squish down before jumping */
+  }
+  45% {
+    transform: translateY(-7px) scale(0.94, 1.08); /* Lift off and stretch */
+  }
+  60% {
+    transform: translateY(1px) scale(1.04, 0.96); /* Landing compression */
+  }
+  75% {
+    transform: translateY(0) scale(1, 1); /* Settle back */
+  }
+}
+
+@keyframes shadow-scale {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  30% {
+    transform: scale(1.15, 0.9);
+    opacity: 0.35;
+  }
+  45% {
+    transform: scale(0.65);
+    opacity: 0.08;
+  }
+  60% {
+    transform: scale(1.2, 1);
+    opacity: 0.4;
+  }
+  75% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+}
+
+@keyframes chibi-head {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-1px) rotate(1.5deg);
+  }
+}
+
+@keyframes balloon-bob {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(3deg);
+  }
+}
+
+@keyframes eye-blink {
+  0%, 90%, 100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes arm-wave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-3deg);
+  }
+}
+
+.animate-chibi-body {
+  animation: chibi-bob 4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.animate-chibi-jump {
+  animation: chibi-jump 3.2s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+  transform-origin: bottom center;
+}
+
+.animate-shadow-scale {
+  animation: shadow-scale 3.2s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+  transform-origin: 76px 112px; /* Center of the boy's shadow */
+}
+
+.animate-chibi-head {
+  animation: chibi-head 5s ease-in-out infinite;
+  transform-origin: center 60px;
+}
+
+.animate-balloon {
+  animation: balloon-bob 6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.animate-eye {
+  animation: eye-blink 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-arm {
+  animation: arm-wave 4s ease-in-out infinite;
+  transform-origin: left top;
+}
+
+

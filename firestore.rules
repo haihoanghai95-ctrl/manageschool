@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Cấu hình luật bảo mật cho phép ứng dụng đọc và ghi dữ liệu trên các bảng/collections
+    
+    match /settings/{document} {
+      allow read, write: if true;
+    }
+    
+    match /classrooms/{document} {
+      allow read, write: if true;
+    }
+    
+    match /students/{document} {
+      allow read, write: if true;
+    }
+    
+    match /teachers/{document} {
+      allow read, write: if true;
+    }
+    
+    match /parents/{document} {
+      allow read, write: if true;
+    }
+    
+    match /weekly_menu/{document} {
+      allow read, write: if true;
+    }
+    
+    match /absence_reports/{document} {
+      allow read, write: if true;
+    }
+    
+    match /attendance/{document} {
+      allow read, write: if true;
+    }
+    
+    match /test/{document} {
+      allow read, write: if true;
+    }
+  }
+}
