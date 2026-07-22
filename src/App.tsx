@@ -667,23 +667,40 @@ export default function App() {
 
             {/* Quick absence reports notifications bell */}
             <div className="relative">
-              <button
-                onClick={() => {
-                  if (!notifDropdownOpen) {
-                    setTeacherNotifications(StorageService.getTeacherNotifications());
-                  }
-                  setNotifDropdownOpen(!notifDropdownOpen);
-                }}
-                className="p-2 rounded-full border border-slate-200/60 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer transition relative flex items-center justify-center"
-                title="Thông báo từ phụ huynh"
-              >
-                <Bell size={16} />
-                {(displayedAbsenceReports.filter(r => r.status === 'pending').length + displayedNotifications.filter(n => !n.isRead).length) > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-extrabold w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse">
-                    {displayedAbsenceReports.filter(r => r.status === 'pending').length + displayedNotifications.filter(n => !n.isRead).length}
-                  </span>
-                )}
-              </button>
+              {(() => {
+                const pendingAbsenceCount = displayedAbsenceReports.filter(r => r.status === 'pending').length;
+                const unreadNotifCount = displayedNotifications.filter(n => !n.isRead).length;
+                const totalNotifBadgeCount = pendingAbsenceCount + unreadNotifCount;
+                const hasPendingLeaveRequests = pendingAbsenceCount > 0;
+
+                return (
+                  <button
+                    onClick={() => {
+                      if (!notifDropdownOpen) {
+                        setTeacherNotifications(StorageService.getTeacherNotifications());
+                      }
+                      setNotifDropdownOpen(!notifDropdownOpen);
+                    }}
+                    className={`p-2 rounded-full border cursor-pointer transition-all relative flex items-center justify-center ${
+                      hasPendingLeaveRequests
+                        ? 'border-rose-300 dark:border-rose-800 bg-rose-50/90 dark:bg-rose-950/50 text-rose-600 dark:text-rose-300 ring-2 ring-rose-400/30 dark:ring-rose-500/20 shadow-xs animate-bell-shake'
+                        : 'border-slate-200/60 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400'
+                    }`}
+                    title={
+                      hasPendingLeaveRequests
+                        ? `Có ${pendingAbsenceCount} đơn xin nghỉ phép mới chưa được duyệt!`
+                        : 'Thông báo từ phụ huynh'
+                    }
+                  >
+                    <Bell size={16} className={hasPendingLeaveRequests ? 'animate-bell-shake text-rose-500 dark:text-rose-400' : ''} />
+                    {totalNotifBadgeCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-extrabold w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse shadow-xs">
+                        {totalNotifBadgeCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })()}
 
               {/* Notification Dropdown Panel */}
               {notifDropdownOpen && (
