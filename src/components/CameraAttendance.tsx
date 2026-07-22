@@ -592,46 +592,8 @@ export default function CameraAttendance({
         }
 
         if (hasRealFrame) {
-          // --- DRAW VIDEO HUD OVERLAY ---
-          const centerX = tempCanvas.width / 2;
-          const centerY = tempCanvas.height / 2;
-
-          // 1. Vẽ vòng tròn định vị mờ
-          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? 'rgba(245, 158, 11, 0.45)' : 'rgba(16, 185, 129, 0.45)';
-          tempCtx.lineWidth = 1.5;
-          tempCtx.beginPath();
-          tempCtx.arc(centerX, centerY, 100, 0, 2 * Math.PI);
-          tempCtx.stroke();
-
-          // 2. Vẽ 4 góc định vị màu xanh lá / hổ phách
-          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? '#f59e0b' : '#10b981';
-          tempCtx.lineWidth = 4;
-          const cornerLen = 25;
-          const boxX = centerX - 90;
-          const boxY = centerY - 90;
-          const boxW = 180;
-          const boxH = 180;
-
-          // Top Left
-          tempCtx.beginPath(); tempCtx.moveTo(boxX, boxY + cornerLen); tempCtx.lineTo(boxX, boxY); tempCtx.lineTo(boxX + cornerLen, boxY); tempCtx.stroke();
-          // Top Right
-          tempCtx.beginPath(); tempCtx.moveTo(boxX + boxW - cornerLen, boxY); tempCtx.lineTo(boxX + boxW, boxY); tempCtx.lineTo(boxX + boxW, boxY + cornerLen); tempCtx.stroke();
-          // Bottom Left
-          tempCtx.beginPath(); tempCtx.moveTo(boxX, boxY + boxH - cornerLen); tempCtx.lineTo(boxX, boxY + boxH); tempCtx.lineTo(boxX + cornerLen, boxY + boxH); tempCtx.stroke();
-          // Bottom Right
-          tempCtx.beginPath(); tempCtx.moveTo(boxX + boxW - cornerLen, boxY + boxH); tempCtx.lineTo(boxX + boxW, boxY + boxH); tempCtx.lineTo(boxX + boxW, boxY + boxH - cornerLen); tempCtx.stroke();
-
-          // 3. Vẽ tag thông tin nhỏ dưới khung nhận diện
-          tempCtx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-          tempCtx.fillRect(centerX - 95, centerY + 105, 190, 26);
-          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? '#f59e0b' : '#10b981';
-          tempCtx.lineWidth = 1.5;
-          tempCtx.strokeRect(centerX - 95, centerY + 105, 190, 26);
-
-          tempCtx.fillStyle = '#ffffff';
-          tempCtx.font = 'bold 11px Inter, system-ui, sans-serif';
-          tempCtx.textAlign = 'center';
-          tempCtx.fillText(student.fullName.toUpperCase(), centerX, centerY + 121);
+          // --- KEEP CAPTURED PHOTO CLEAN (No orange/green face recognition frame overlay) ---
+          // Keep the captured camera image pure and unobstructed as requested by user
         } else {
           // --- DRAW TECH BIOMETRIC HUD GRAPHICS AS SIMULATOR PHOTO ---
           // Nền tối công nghệ hiện đại
@@ -741,39 +703,41 @@ export default function CameraAttendance({
         tempCtx.textAlign = 'right';
         tempCtx.fillText(nowStr, tempCanvas.width - 30, tempCanvas.height - 30);
         
-        // Vẽ khung ngắm ở 4 góc ngoài cùng của ảnh camera
-        tempCtx.strokeStyle = attendancePurpose === 'checkout' ? '#f59e0b' : '#10b981';
-        tempCtx.lineWidth = 3;
-        const bracketLen = 30;
-        const margin = 15;
-        
-        // Top Left
-        tempCtx.beginPath();
-        tempCtx.moveTo(margin, margin + bracketLen);
-        tempCtx.lineTo(margin, margin);
-        tempCtx.lineTo(margin + bracketLen, margin);
-        tempCtx.stroke();
-        
-        // Top Right
-        tempCtx.beginPath();
-        tempCtx.moveTo(tempCanvas.width - margin - bracketLen, margin);
-        tempCtx.lineTo(tempCanvas.width - margin, margin);
-        tempCtx.lineTo(tempCanvas.width - margin, margin + bracketLen);
-        tempCtx.stroke();
-        
-        // Bottom Left
-        tempCtx.beginPath();
-        tempCtx.moveTo(margin, tempCanvas.height - margin - bracketLen);
-        tempCtx.lineTo(margin, tempCanvas.height - margin);
-        tempCtx.lineTo(margin + bracketLen, tempCanvas.height - margin);
-        tempCtx.stroke();
-        
-        // Bottom Right
-        tempCtx.beginPath();
-        tempCtx.moveTo(tempCanvas.width - margin - bracketLen, tempCanvas.height - margin);
-        tempCtx.lineTo(tempCanvas.width - margin, tempCanvas.height - margin);
-        tempCtx.lineTo(tempCanvas.width - margin, tempCanvas.height - margin - bracketLen);
-        tempCtx.stroke();
+        // Vẽ khung ngắm ở 4 góc ngoài cùng của ảnh camera (Chỉ vẽ trên simulator)
+        if (!hasRealFrame) {
+          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? '#f59e0b' : '#10b981';
+          tempCtx.lineWidth = 3;
+          const bracketLen = 30;
+          const margin = 15;
+          
+          // Top Left
+          tempCtx.beginPath();
+          tempCtx.moveTo(margin, margin + bracketLen);
+          tempCtx.lineTo(margin, margin);
+          tempCtx.lineTo(margin + bracketLen, margin);
+          tempCtx.stroke();
+          
+          // Top Right
+          tempCtx.beginPath();
+          tempCtx.moveTo(tempCanvas.width - margin - bracketLen, margin);
+          tempCtx.lineTo(tempCanvas.width - margin, margin);
+          tempCtx.lineTo(tempCanvas.width - margin, margin + bracketLen);
+          tempCtx.stroke();
+          
+          // Bottom Left
+          tempCtx.beginPath();
+          tempCtx.moveTo(margin, tempCanvas.height - margin - bracketLen);
+          tempCtx.lineTo(margin, tempCanvas.height - margin);
+          tempCtx.lineTo(margin + bracketLen, tempCanvas.height - margin);
+          tempCtx.stroke();
+          
+          // Bottom Right
+          tempCtx.beginPath();
+          tempCtx.moveTo(tempCanvas.width - margin - bracketLen, tempCanvas.height - margin);
+          tempCtx.lineTo(tempCanvas.width - margin, tempCanvas.height - margin);
+          tempCtx.lineTo(tempCanvas.width - margin, tempCanvas.height - margin - bracketLen);
+          tempCtx.stroke();
+        }
 
         capturedPhoto = tempCanvas.toDataURL('image/jpeg', 0.85);
       }
@@ -1876,105 +1840,6 @@ export default function CameraAttendance({
             Nhận diện sinh trắc học gương mặt 128 chiều, tự động phân tích và chấm điểm danh đúng giờ/muộn giờ.
           </p>
         </div>
-
-        {/* Start / Stop Button */}
-        {!isActive ? (
-          <button
-            onClick={startScanningSession}
-            className={`px-5 py-3 rounded-xl font-bold text-xs uppercase flex items-center gap-2 shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer ${getThemeBgClass()}`}
-          >
-            <Play size={16} />
-            <span>Bắt đầu điểm danh</span>
-          </button>
-        ) : (
-          <button
-            onClick={stopScanningSession}
-            className="px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl font-bold text-xs uppercase flex items-center gap-2 shadow-lg cursor-pointer transition"
-          >
-            <Square size={16} />
-            <span>Dừng điểm danh</span>
-          </button>
-        )}
-      </div>
-
-      {/* Attendance Mode Selector Bar */}
-      <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col xl:flex-row justify-between items-center gap-4">
-        <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full xl:w-auto">
-          {/* AI Face / QR Code Selection */}
-          <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl w-full sm:w-auto">
-            <button
-              onClick={() => setMode('face')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                mode === 'face'
-                  ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
-              }`}
-            >
-              <Camera size={14} />
-              <span>AI Face Recognition</span>
-            </button>
-            <button
-              onClick={() => setMode('qr')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                mode === 'qr'
-                  ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
-              }`}
-            >
-              <QrCode size={14} />
-              <span>QR Code Attendance</span>
-            </button>
-          </div>
-
-          {/* Check-In / Check-Out Selection */}
-          <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl w-full sm:w-auto">
-            <button
-              onClick={() => setAttendancePurpose('checkin')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                attendancePurpose === 'checkin'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Quét Vào (Check-In)</span>
-            </button>
-            <button
-              onClick={() => setAttendancePurpose('checkout')}
-              className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                attendancePurpose === 'checkout'
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span>Quét Ra (Check-Out)</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-2 w-full xl:w-auto justify-end">
-          <button
-            onClick={() => {
-              if (!isActive) {
-                startScanningSession();
-              }
-              setIsPresentationMode(true);
-            }}
-            className="w-full sm:w-auto px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-rose-100/50 dark:border-rose-900/40 transition cursor-pointer shadow-xs"
-          >
-            <MonitorPlay size={14} />
-            <span>Chế độ trình chiếu 🖥️</span>
-          </button>
-
-          <button
-            onClick={() => setIsQRModalOpen(true)}
-            className="w-full sm:w-auto px-4 py-2 bg-violet-50 hover:bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:hover:bg-violet-950/50 dark:text-violet-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-violet-100/50 dark:border-violet-900/40 transition cursor-pointer shadow-xs"
-          >
-            <QrCode size={14} />
-            <span>Danh sách mã QR lớp học 📋</span>
-          </button>
-        </div>
       </div>
 
       {/* Main Scaning Grid layout */}
@@ -2784,11 +2649,124 @@ export default function CameraAttendance({
             <div className="mt-4 flex items-start gap-1.5 p-2.5 bg-white/5 rounded-xl text-[10px] text-slate-400 leading-relaxed font-light">
               <HelpCircle size={14} className="text-amber-400 shrink-0 mt-0.5" />
               <span>
-                Lưu ý: Bạn phải nhấn nút <strong>"Bắt đầu điểm danh"</strong> phía trên để mở Camera và kích hoạt bảng mô phỏng thử nghiệm này.
+                Lưu ý: Bạn phải nhấn nút <strong>"Bắt đầu điểm danh"</strong> phía dưới để mở Camera và kích hoạt bảng mô phỏng thử nghiệm này.
               </span>
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Unified Bottom Control Console Panel */}
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-md space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              Bảng điều khiển tác vụ điểm danh <Sparkles className="text-amber-500 animate-pulse" size={16} />
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Cài đặt chế độ quét, đổi chiều điểm danh và kiểm soát bật/tắt camera ghi nhận của học sinh dễ dàng.
+            </p>
+          </div>
+          
+          {/* Start / Stop Button positioned at the bottom right/center */}
+          {!isActive ? (
+            <button
+              onClick={startScanningSession}
+              className={`w-full md:w-auto px-6 py-3.5 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${getThemeBgClass()}`}
+            >
+              <Play size={16} />
+              <span>Bắt đầu điểm danh</span>
+            </button>
+          ) : (
+            <button
+              onClick={stopScanningSession}
+              className="w-full md:w-auto px-6 py-3.5 bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-750 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-xl cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Square size={16} />
+              <span>Dừng điểm danh</span>
+            </button>
+          )}
+        </div>
+
+        {/* Attendance Mode Selector Controls */}
+        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* AI Face / QR Code Selection */}
+            <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl">
+              <button
+                onClick={() => setMode('face')}
+                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  mode === 'face'
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
+                }`}
+              >
+                <Camera size={14} />
+                <span>AI Face Recognition</span>
+              </button>
+              <button
+                onClick={() => setMode('qr')}
+                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  mode === 'qr'
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
+                }`}
+              >
+                <QrCode size={14} />
+                <span>QR Code Attendance</span>
+              </button>
+            </div>
+
+            {/* Check-In / Check-Out Selection */}
+            <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl">
+              <button
+                onClick={() => setAttendancePurpose('checkin')}
+                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  attendancePurpose === 'checkin'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Quét Vào (Check-In)</span>
+              </button>
+              <button
+                onClick={() => setAttendancePurpose('checkout')}
+                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  attendancePurpose === 'checkout'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>Quét Ra (Check-Out)</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <button
+              onClick={() => {
+                if (!isActive) {
+                  startScanningSession();
+                }
+                setIsPresentationMode(true);
+              }}
+              className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-rose-100/50 dark:border-rose-900/40 transition cursor-pointer shadow-xs"
+            >
+              <MonitorPlay size={14} />
+              <span>Chế độ trình chiếu 🖥️</span>
+            </button>
+
+            <button
+              onClick={() => setIsQRModalOpen(true)}
+              className="px-4 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:hover:bg-violet-950/50 dark:text-violet-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-violet-100/50 dark:border-violet-900/40 transition cursor-pointer shadow-xs"
+            >
+              <QrCode size={14} />
+              <span>Danh sách mã QR lớp học 📋</span>
+            </button>
+          </div>
         </div>
       </div>
 
