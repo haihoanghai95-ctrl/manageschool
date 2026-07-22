@@ -1240,6 +1240,7 @@ export default function App() {
                   classrooms={displayedClassrooms}
                   settings={settings}
                   initialActiveTab={healthSubTab}
+                  onSaveStudents={handleSaveStudents}
                 />
               )}
 

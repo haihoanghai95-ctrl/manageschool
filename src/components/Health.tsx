@@ -47,13 +47,46 @@ interface HealthProps {
   classrooms: Classroom[];
   settings: SchoolSettings;
   initialActiveTab?: 'indicators' | 'medication';
+  onSaveStudents?: (newStudents: Student[]) => void;
 }
 
-export default function Health({ students, classrooms, settings, initialActiveTab }: HealthProps) {
+export default function Health({ students, classrooms, settings, initialActiveTab, onSaveStudents }: HealthProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+
+  // State for Quick Notes feature
+  const [editingNoteStudent, setEditingNoteStudent] = useState<Student | null>(null);
+  const [quickNoteText, setQuickNoteText] = useState('');
+
+  const handleOpenQuickNoteModal = (student: Student) => {
+    setEditingNoteStudent(student);
+    setQuickNoteText(student.quickNotes || '');
+  };
+
+  const handleSaveQuickNote = () => {
+    if (!editingNoteStudent) return;
+    
+    const updatedStudents = students.map(s => {
+      if (s.id === editingNoteStudent.id) {
+        return {
+          ...s,
+          quickNotes: quickNoteText.trim()
+        };
+      }
+      return s;
+    });
+
+    if (onSaveStudents) {
+      onSaveStudents(updatedStudents);
+    } else {
+      StorageService.saveStudents(updatedStudents);
+    }
+
+    setEditingNoteStudent(null);
+    setQuickNoteText('');
+  };
 
   // Load health records from storage
   const [healthRecords, setHealthRecords] = useState<HealthRecord[]>(() => 
@@ -1362,6 +1395,12 @@ export default function Health({ students, classrooms, settings, initialActiveTa
                           <div>
                             <strong className="text-slate-850 dark:text-slate-150 block">{student.fullName}</strong>
                             <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">{student.studentCode}</span>
+                            {student.quickNotes && (
+                              <div className="mt-1 flex items-center gap-1 text-[10px] text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-md border border-rose-100 dark:border-rose-900/30 max-w-[200px] hover:max-w-none transition-all duration-300" title={student.quickNotes}>
+                                <AlertTriangle size={10} className="shrink-0 text-rose-500 animate-pulse" />
+                                <span className="font-semibold truncate hover:whitespace-normal">{student.quickNotes}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -1424,14 +1463,25 @@ export default function Health({ students, classrooms, settings, initialActiveTa
 
                       {/* Action trigger */}
                       <td className="px-6 py-4 text-right no-print">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenUpdateModal(student, latestRecord)}
-                          className={`px-3 py-1.5 bg-${accentColor}-500/10 hover:bg-${accentColor}-500/20 text-${accentColor}-600 dark:text-${accentColor}-400 rounded-xl font-bold transition flex items-center gap-1 ml-auto cursor-pointer text-[11px]`}
-                        >
-                          <Edit size={12} />
-                          <span>{hasRecord ? 'Cập nhật' : 'Nhập số đo'}</span>
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenQuickNoteModal(student)}
+                            className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-xl font-bold transition flex items-center gap-1 cursor-pointer text-[11px]"
+                            title="Ghi chú nhanh tình trạng bé (dị ứng, theo dõi đặc biệt...)"
+                          >
+                            <AlertTriangle size={12} className="text-rose-500" />
+                            <span>Ghi chú nhanh</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenUpdateModal(student, latestRecord)}
+                            className={`px-2.5 py-1.5 bg-${accentColor}-500/10 hover:bg-${accentColor}-500/20 text-${accentColor}-600 dark:text-${accentColor}-400 rounded-xl font-bold transition flex items-center gap-1 cursor-pointer text-[11px]`}
+                          >
+                            <Edit size={12} />
+                            <span>{hasRecord ? 'Cập nhật' : 'Nhập số đo'}</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -2558,6 +2608,104 @@ export default function Health({ students, classrooms, settings, initialActiveTa
               >
                 <span>Mở trang in & Lưu PDF 📄</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Note Modal */}
+      {editingNoteStudent && (
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 z-[200] animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl relative animate-scale-in">
+            <button
+              onClick={() => {
+                setEditingNoteStudent(null);
+                setQuickNoteText('');
+              }}
+              className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 p-2 rounded-full text-slate-500 dark:text-slate-300 transition cursor-pointer flex items-center justify-center w-8 h-8"
+            >
+              <X size={16} />
+            </button>
+            <div className="p-6 space-y-4">
+              <h3 className="text-sm font-extrabold text-rose-600 dark:text-rose-450 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-3 font-sans">
+                <AlertTriangle size={18} className="text-rose-500 animate-pulse" />
+                <span>Ghi chú nhanh sức khỏe học sinh</span>
+              </h3>
+
+              <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-150 dark:border-slate-800/80">
+                <img
+                  src={editingNoteStudent.avatar}
+                  alt={editingNoteStudent.fullName}
+                  className="w-10 h-10 rounded-full border border-slate-200 dark:border-slate-800 shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+                <div>
+                  <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200">{editingNoteStudent.fullName}</h4>
+                  <p className="text-[10px] text-slate-400 font-mono">Mã HS: {editingNoteStudent.studentCode} | Lớp: {editingNoteStudent.className}</p>
+                </div>
+              </div>
+
+              <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Nhập các thông tin đặc biệt cần chú ý như dị ứng thực phẩm, bệnh lý nền hoặc yêu cầu theo dõi đặc biệt đối với bé:
+              </div>
+
+              {/* Suggestions */}
+              <div className="space-y-2">
+                <label className="text-[11px] font-black uppercase text-slate-400 dark:text-slate-500 block">
+                  💡 Gợi ý nhanh:
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "Dị ứng thực phẩm (Hải sản) 🦐",
+                    "Dị ứng đậu phộng/lạc 🥜",
+                    "Cần theo dõi đặc biệt ⚠️",
+                    "Dị ứng sữa / Lactose 🥛",
+                    "Bệnh hen suyễn 🫁",
+                    "Sốt nhẹ / Nhớ uống nước ấm 🤒",
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setQuickNoteText(preset)}
+                      className="text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer border border-transparent hover:border-slate-300/40 font-semibold"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Textarea */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-black uppercase text-slate-400 dark:text-slate-500 block">
+                  Nội dung ghi chú:
+                </label>
+                <textarea
+                  value={quickNoteText}
+                  onChange={(e) => setQuickNoteText(e.target.value)}
+                  placeholder="Nhập ghi chú chi tiết hoặc chọn gợi ý phía trên..."
+                  className="w-full h-24 p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950 focus:outline-hidden focus:ring-1 focus:ring-rose-500 text-xs text-slate-800 dark:text-slate-100 font-sans"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => {
+                    setEditingNoteStudent(null);
+                    setQuickNoteText('');
+                  }}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 font-bold rounded-xl transition text-xs cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  onClick={handleSaveQuickNote}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition text-xs cursor-pointer shadow-md shadow-rose-600/10"
+                >
+                  Lưu ghi chú
+                </button>
+              </div>
             </div>
           </div>
         </div>

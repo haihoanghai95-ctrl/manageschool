@@ -124,6 +124,55 @@ export default function CameraAttendance({
     return () => clearTimeout(timer);
   }, [activeToast]);
 
+  // Automatic shutdown for inactive camera (Default: 10 minutes)
+  const lastActiveTimeRef = useRef<number>(Date.now());
+  const [showAutoShutdownAlert, setShowAutoShutdownAlert] = useState(false);
+
+  const resetInactivityTimer = () => {
+    lastActiveTimeRef.current = Date.now();
+    if (showAutoShutdownAlert) {
+      setShowAutoShutdownAlert(false);
+    }
+  };
+
+  // Reset timer on any user interaction with the window/app while camera is active
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleUserInteraction = () => {
+      resetInactivityTimer();
+    };
+
+    window.addEventListener('click', handleUserInteraction);
+    window.addEventListener('keydown', handleUserInteraction);
+    window.addEventListener('mousemove', handleUserInteraction);
+    window.addEventListener('touchstart', handleUserInteraction);
+
+    return () => {
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('mousemove', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, [isActive, showAutoShutdownAlert]);
+
+  // Periodically check inactivity duration and stop camera if exceeded 10 minutes
+  useEffect(() => {
+    if (!isActive) return;
+
+    const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+    const checkInterval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - lastActiveTimeRef.current;
+      if (elapsed >= INACTIVITY_TIMEOUT) {
+        stopScanningSession();
+        setShowAutoShutdownAlert(true);
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(checkInterval);
+  }, [isActive]);
+
   // Refs for camera streaming and facial overlay canvas
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -202,6 +251,7 @@ export default function CameraAttendance({
     setScanState('idle');
     setLastScannedStudent(null);
     setIsActive(true);
+    resetInactivityTimer();
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -301,38 +351,7 @@ export default function CameraAttendance({
           ctx.stroke();
         }
 
-        // Corner brackets for QR box
-        ctx.strokeStyle = scanState === 'success' ? '#10b981' : scanState === 'unknown' ? '#f43f5e' : '#8b5cf6';
-        ctx.lineWidth = 4;
-        const len = 22;
-
-        // Top Left
-        ctx.beginPath();
-        ctx.moveTo(qrx, qry + len);
-        ctx.lineTo(qrx, qry);
-        ctx.lineTo(qrx + len, qry);
-        ctx.stroke();
-
-        // Top Right
-        ctx.beginPath();
-        ctx.moveTo(qrx + qrSize - len, qry);
-        ctx.lineTo(qrx + qrSize, qry);
-        ctx.lineTo(qrx + qrSize, qry + len);
-        ctx.stroke();
-
-        // Bottom Left
-        ctx.beginPath();
-        ctx.moveTo(qrx, qry + qrSize - len);
-        ctx.lineTo(qrx, qry + qrSize);
-        ctx.lineTo(qrx + len, qry + qrSize);
-        ctx.stroke();
-
-        // Bottom Right
-        ctx.beginPath();
-        ctx.moveTo(qrx + qrSize - len, qry + qrSize);
-        ctx.lineTo(qrx + qrSize, qry + qrSize);
-        ctx.lineTo(qrx + qrSize, qry + qrSize - len);
-        ctx.stroke();
+        // Corner brackets for QR box - Removed as requested by user to keep identification frame hidden
 
         // Draw crosshair helper lines
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
@@ -381,38 +400,7 @@ export default function CameraAttendance({
           ctx.stroke();
         }
 
-        // HUD green/red/blue scanner frame box brackets
-        ctx.strokeStyle = scanState === 'success' ? '#10b981' : scanState === 'unknown' ? '#f43f5e' : '#3b82f6';
-        ctx.lineWidth = 3.5;
-        
-        const len = 25; // corner length
-        // Top Left corner
-        ctx.beginPath();
-        ctx.moveTo(box.x, box.y + len);
-        ctx.lineTo(box.x, box.y);
-        ctx.lineTo(box.x + len, box.y);
-        ctx.stroke();
-
-        // Top Right corner
-        ctx.beginPath();
-        ctx.moveTo(box.x + box.width - len, box.y);
-        ctx.lineTo(box.x + box.width, box.y);
-        ctx.lineTo(box.x + box.width, box.y + len);
-        ctx.stroke();
-
-        // Bottom Left corner
-        ctx.beginPath();
-        ctx.moveTo(box.x, box.y + box.height - len);
-        ctx.lineTo(box.x, box.y + box.height);
-        ctx.lineTo(box.x + len, box.y + box.height);
-        ctx.stroke();
-
-        // Bottom Right corner
-        ctx.beginPath();
-        ctx.moveTo(box.x + box.width - len, box.y + box.height);
-        ctx.lineTo(box.x + box.width, box.y + box.height);
-        ctx.lineTo(box.x + box.width, box.y + box.height - len);
-        ctx.stroke();
+        // HUD green/red/blue scanner frame box brackets - Removed as requested by user to keep identification frame hidden
 
         // 2. Draw dots at jawline, eyes, nose, mouth (Facial Mesh simulation)
         ctx.fillStyle = scanState === 'success' ? 'rgba(16, 185, 129, 0.7)' : scanState === 'unknown' ? 'rgba(244, 63, 94, 0.7)' : 'rgba(59, 130, 246, 0.7)';
@@ -506,6 +494,7 @@ export default function CameraAttendance({
 
   // Trigger Attendance Process (either simulated or actual scanning match)
   const processAttendance = (student: Student | null) => {
+    resetInactivityTimer();
     if (!student) {
       // Trình trạng không nhận diện được
       setScanState('unknown');
@@ -615,7 +604,7 @@ export default function CameraAttendance({
           const centerY = tempCanvas.height / 2 - 30;
           
           // Vòng tròn ngoài cùng đứt nét
-          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)';
+          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? 'rgba(59, 130, 246, 0.35)' : 'rgba(16, 185, 129, 0.35)';
           tempCtx.lineWidth = 2;
           tempCtx.setLineDash([8, 8]);
           tempCtx.beginPath();
@@ -624,7 +613,7 @@ export default function CameraAttendance({
           tempCtx.setLineDash([]);
 
           // Vòng tròn quét gương mặt
-          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? '#f59e0b' : '#10b981';
+          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? '#3b82f6' : '#10b981';
           tempCtx.lineWidth = 1.5;
           tempCtx.beginPath();
           tempCtx.arc(centerX, centerY, 80, 0, 2 * Math.PI);
@@ -667,7 +656,7 @@ export default function CameraAttendance({
           // Sóng quét radar laser màu xanh lá mờ đi qua mặt
           const laserGradient = tempCtx.createLinearGradient(0, centerY - 90, 0, centerY + 90);
           laserGradient.addColorStop(0, 'rgba(16, 185, 129, 0)');
-          laserGradient.addColorStop(0.5, attendancePurpose === 'checkout' ? 'rgba(245, 158, 11, 0.18)' : 'rgba(16, 185, 129, 0.18)');
+          laserGradient.addColorStop(0.5, attendancePurpose === 'checkout' ? 'rgba(59, 130, 246, 0.18)' : 'rgba(16, 185, 129, 0.18)');
           laserGradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
           tempCtx.fillStyle = laserGradient;
           tempCtx.fillRect(centerX - 90, centerY - 90, 180, 180);
@@ -682,7 +671,7 @@ export default function CameraAttendance({
           tempCtx.font = 'bold 12px monospace';
           tempCtx.fillText(`ID: ${student.studentCode} • MATCHED 99%`, centerX, centerY + 142);
 
-          tempCtx.fillStyle = attendancePurpose === 'checkout' ? '#f59e0b' : '#10b981';
+          tempCtx.fillStyle = attendancePurpose === 'checkout' ? '#3b82f6' : '#10b981';
           tempCtx.fillText(attendancePurpose === 'checkout' ? `STATUS: CHECK-OUT` : `STATUS: VERIFIED`, centerX, centerY + 162);
         }
 
@@ -703,40 +692,9 @@ export default function CameraAttendance({
         tempCtx.textAlign = 'right';
         tempCtx.fillText(nowStr, tempCanvas.width - 30, tempCanvas.height - 30);
         
-        // Vẽ khung ngắm ở 4 góc ngoài cùng của ảnh camera (Chỉ vẽ trên simulator)
-        if (!hasRealFrame) {
-          tempCtx.strokeStyle = attendancePurpose === 'checkout' ? '#f59e0b' : '#10b981';
-          tempCtx.lineWidth = 3;
-          const bracketLen = 30;
-          const margin = 15;
-          
-          // Top Left
-          tempCtx.beginPath();
-          tempCtx.moveTo(margin, margin + bracketLen);
-          tempCtx.lineTo(margin, margin);
-          tempCtx.lineTo(margin + bracketLen, margin);
-          tempCtx.stroke();
-          
-          // Top Right
-          tempCtx.beginPath();
-          tempCtx.moveTo(tempCanvas.width - margin - bracketLen, margin);
-          tempCtx.lineTo(tempCanvas.width - margin, margin);
-          tempCtx.lineTo(tempCanvas.width - margin, margin + bracketLen);
-          tempCtx.stroke();
-          
-          // Bottom Left
-          tempCtx.beginPath();
-          tempCtx.moveTo(margin, tempCanvas.height - margin - bracketLen);
-          tempCtx.lineTo(margin, tempCanvas.height - margin);
-          tempCtx.lineTo(margin + bracketLen, tempCanvas.height - margin);
-          tempCtx.stroke();
-          
-          // Bottom Right
-          tempCtx.beginPath();
-          tempCtx.moveTo(tempCanvas.width - margin - bracketLen, tempCanvas.height - margin);
-          tempCtx.lineTo(tempCanvas.width - margin, tempCanvas.height - margin);
-          tempCtx.lineTo(tempCanvas.width - margin, tempCanvas.height - margin - bracketLen);
-          tempCtx.stroke();
+        // Vẽ khung ngắm ở 4 góc ngoài cùng của ảnh camera (Chỉ vẽ trên simulator) - Removed as requested by user to keep identification frame hidden
+        if (false) {
+          // Keep structure but disable execution
         }
 
         capturedPhoto = tempCanvas.toDataURL('image/jpeg', 0.85);
@@ -1842,6 +1800,119 @@ export default function CameraAttendance({
         </div>
       </div>
 
+      {/* Unified Control Console Panel - Now placed at the top for easier user interaction */}
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-md space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              Bảng điều khiển tác vụ điểm danh <Sparkles className="text-amber-500 animate-pulse" size={16} />
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Cài đặt chế độ quét, đổi chiều điểm danh và kiểm soát bật/tắt camera ghi nhận của học sinh dễ dàng.
+            </p>
+          </div>
+          
+          {/* Start / Stop Button positioned at the top right/center */}
+          {!isActive ? (
+            <button
+              onClick={startScanningSession}
+              className={`w-full md:w-auto px-6 py-3.5 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${getThemeBgClass()}`}
+            >
+              <Play size={16} />
+              <span>Bắt đầu điểm danh</span>
+            </button>
+          ) : (
+            <button
+              onClick={stopScanningSession}
+              className="w-full md:w-auto px-6 py-3.5 bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-750 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-xl cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Square size={16} />
+              <span>Dừng điểm danh</span>
+            </button>
+          )}
+        </div>
+
+        {/* Attendance Mode Selector Controls */}
+        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* AI Face / QR Code Selection */}
+            <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl">
+              <button
+                onClick={() => setMode('face')}
+                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  mode === 'face'
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
+                }`}
+              >
+                <Camera size={14} />
+                <span>AI Face Recognition</span>
+              </button>
+              <button
+                onClick={() => setMode('qr')}
+                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  mode === 'qr'
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
+                }`}
+              >
+                <QrCode size={14} />
+                <span>QR Code Attendance</span>
+              </button>
+            </div>
+
+            {/* Check-In / Check-Out Selection */}
+            <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl">
+              <button
+                onClick={() => setAttendancePurpose('checkin')}
+                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  attendancePurpose === 'checkin'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Quét Vào (Check-In)</span>
+              </button>
+              <button
+                onClick={() => setAttendancePurpose('checkout')}
+                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
+                  attendancePurpose === 'checkout'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>Quét Ra (Check-Out)</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <button
+              onClick={() => {
+                if (!isActive) {
+                  startScanningSession();
+                }
+                setIsPresentationMode(true);
+              }}
+              className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-rose-100/50 dark:border-rose-900/40 transition cursor-pointer shadow-xs"
+            >
+              <MonitorPlay size={14} />
+              <span>Chế độ trình chiếu 🖥️</span>
+            </button>
+
+            <button
+              onClick={() => setIsQRModalOpen(true)}
+              className="px-4 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:hover:bg-violet-950/50 dark:text-violet-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-violet-100/50 dark:border-violet-900/40 transition cursor-pointer shadow-xs"
+            >
+              <QrCode size={14} />
+              <span>Danh sách mã QR lớp học 📋</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Main Scaning Grid layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
@@ -1946,7 +2017,27 @@ export default function CameraAttendance({
             )}
 
             {/* Offline/Blank Screen message */}
-            {!isActive && (
+            {!isActive && showAutoShutdownAlert ? (
+              <div className="text-center text-amber-500 space-y-4 p-6 flex flex-col items-center justify-center relative z-10 animate-fade-in">
+                <div className="p-4 bg-amber-500/10 rounded-full border border-amber-500/30 text-amber-500 animate-pulse">
+                  <Clock size={36} className="stroke-1" />
+                </div>
+                <div className="space-y-1.5 flex flex-col items-center">
+                  <h4 className="text-sm font-bold text-amber-500 uppercase tracking-wider">Đã tự động đóng Camera 🔋</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-normal font-semibold">
+                    Camera đã tự động ngắt sau <strong>10 phút không hoạt động</strong> để tiết kiệm pin và giảm nhiệt cho thiết bị của bạn.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => startScanningSession()}
+                    className="mt-3 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] uppercase rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RefreshCw size={12} className="animate-spin" />
+                    <span>Bật lại Camera ngay</span>
+                  </button>
+                </div>
+              </div>
+            ) : !isActive && (
               <div className="text-center text-slate-500 space-y-3 p-6 flex flex-col items-center justify-center relative z-10">
                 <div className="p-4 bg-slate-800/40 rounded-full">
                   <Camera size={36} className="text-slate-400 stroke-1" />
@@ -2649,124 +2740,11 @@ export default function CameraAttendance({
             <div className="mt-4 flex items-start gap-1.5 p-2.5 bg-white/5 rounded-xl text-[10px] text-slate-400 leading-relaxed font-light">
               <HelpCircle size={14} className="text-amber-400 shrink-0 mt-0.5" />
               <span>
-                Lưu ý: Bạn phải nhấn nút <strong>"Bắt đầu điểm danh"</strong> phía dưới để mở Camera và kích hoạt bảng mô phỏng thử nghiệm này.
+                Lưu ý: Bạn phải nhấn nút <strong>"Bắt đầu điểm danh"</strong> phía trên để mở Camera và kích hoạt bảng mô phỏng thử nghiệm này.
               </span>
             </div>
           </div>
 
-        </div>
-      </div>
-
-      {/* Unified Bottom Control Console Panel */}
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-md space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-              Bảng điều khiển tác vụ điểm danh <Sparkles className="text-amber-500 animate-pulse" size={16} />
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Cài đặt chế độ quét, đổi chiều điểm danh và kiểm soát bật/tắt camera ghi nhận của học sinh dễ dàng.
-            </p>
-          </div>
-          
-          {/* Start / Stop Button positioned at the bottom right/center */}
-          {!isActive ? (
-            <button
-              onClick={startScanningSession}
-              className={`w-full md:w-auto px-6 py-3.5 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${getThemeBgClass()}`}
-            >
-              <Play size={16} />
-              <span>Bắt đầu điểm danh</span>
-            </button>
-          ) : (
-            <button
-              onClick={stopScanningSession}
-              className="w-full md:w-auto px-6 py-3.5 bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-750 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-xl cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Square size={16} />
-              <span>Dừng điểm danh</span>
-            </button>
-          )}
-        </div>
-
-        {/* Attendance Mode Selector Controls */}
-        <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            {/* AI Face / QR Code Selection */}
-            <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl">
-              <button
-                onClick={() => setMode('face')}
-                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                  mode === 'face'
-                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
-                }`}
-              >
-                <Camera size={14} />
-                <span>AI Face Recognition</span>
-              </button>
-              <button
-                onClick={() => setMode('qr')}
-                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                  mode === 'qr'
-                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
-                }`}
-              >
-                <QrCode size={14} />
-                <span>QR Code Attendance</span>
-              </button>
-            </div>
-
-            {/* Check-In / Check-Out Selection */}
-            <div className="flex p-1 bg-slate-100 dark:bg-slate-950 rounded-xl">
-              <button
-                onClick={() => setAttendancePurpose('checkin')}
-                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                  attendancePurpose === 'checkin'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Quét Vào (Check-In)</span>
-              </button>
-              <button
-                onClick={() => setAttendancePurpose('checkout')}
-                className={`flex-1 px-4 py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer ${
-                  attendancePurpose === 'checkout'
-                    ? 'bg-amber-500 text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-850 dark:hover:text-slate-200'
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <span>Quét Ra (Check-Out)</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <button
-              onClick={() => {
-                if (!isActive) {
-                  startScanningSession();
-                }
-                setIsPresentationMode(true);
-              }}
-              className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-rose-100/50 dark:border-rose-900/40 transition cursor-pointer shadow-xs"
-            >
-              <MonitorPlay size={14} />
-              <span>Chế độ trình chiếu 🖥️</span>
-            </button>
-
-            <button
-              onClick={() => setIsQRModalOpen(true)}
-              className="px-4 py-2.5 bg-violet-50 hover:bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:hover:bg-violet-950/50 dark:text-violet-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-violet-100/50 dark:border-violet-900/40 transition cursor-pointer shadow-xs"
-            >
-              <QrCode size={14} />
-              <span>Danh sách mã QR lớp học 📋</span>
-            </button>
-          </div>
         </div>
       </div>
 
